@@ -1,0 +1,183 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<title>Sakthivel Carriers</title>
+<style>
+body{font-family:Arial;background:#eee;padding:10px}
+.page{display:none;background:#fff;padding:12px}
+.row{display:flex;align-items:center;margin:5px 0}
+.row label{width:80px;font-weight:bold}
+.row input{flex:1;padding:6px;font-size:14px}
+button{padding:6px 10px;margin:4px;font-size:14px}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{border:1px solid #000;padding:4px;text-align:center}
+.total{font-size:18px;font-weight:bold;margin-top:8px}
+.small{font-size:12px;color:#555}
+@media print{
+ button,input,label{display:none}
+ body{background:#fff}
+}
+</style>
+</head>
+
+<body>
+
+<h2>🚛 சக்திவேல் கேரியர்ஸ்</h2>
+
+<div id="home">
+  <button onclick="openCompany('Phonix')">Phonix</button>
+  <button onclick="openCompany('Varnis')">Varnis</button>
+  <button onclick="openCompany('Suresh Scoring')">Suresh Scoring</button>
+</div>
+
+<div id="bill" class="page">
+  <h3 id="cname"></h3>
+
+  <div class="row">
+    <label>Date</label>
+    <input type="date" id="date">
+  </div>
+
+  <div class="row">
+    <label>From</label>
+    <input id="from">
+  </div>
+
+  <div class="row">
+    <label>Count</label>
+    <input id="count">
+  </div>
+
+  <div class="row">
+    <label>To</label>
+    <input id="to">
+  </div>
+
+  <div class="row">
+    <label>Amount</label>
+    <input type="number" id="amt">
+  </div>
+
+  <button onclick="addLoad()">Add Load</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Load No</th>
+        <th>From</th>
+        <th>Count</th>
+        <th>To</th>
+        <th>₹</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <div class="total">Total ₹ <span id="total">0</span></div>
+
+  <button onclick="createBill()">Create Bill (PDF)</button>
+  <button onclick="sendWhatsApp()">Send WhatsApp</button>
+  <button onclick="goHome()">Back</button>
+</div>
+
+<script>
+let company="", data=[], editIndex=-1;
+
+function openCompany(c){
+  company=c;
+  home.style.display="none";
+  bill.style.display="block";
+  cname.innerText=c;
+  date.valueAsDate=new Date();
+  loadHistory();
+}
+
+function todayKey(){
+  return company+"_"+date.value;
+}
+
+function addLoad(){
+  if(!amt.value) return;
+
+  if(editIndex==-1){
+    data.push({from:from.value,count:count.value,to:to.value,amt:amt.value});
+  } else {
+    data[editIndex]={from:from.value,count:count.value,to:to.value,amt:amt.value};
+    editIndex=-1;
+  }
+
+  saveHistory();
+  render();
+  from.value=count.value=to.value=amt.value="";
+}
+
+function render(){
+  rows.innerHTML="";
+  let total=0;
+  data.forEach((r,i)=>{
+    total+=parseInt(r.amt);
+    rows.innerHTML+=`
+    <tr>
+      <td class="small">${date.value}<br>No:${i+1}</td>
+      <td>${r.from}</td>
+      <td>${r.count}</td>
+      <td>${r.to}</td>
+      <td>${r.amt}</td>
+      <td>
+        <button onclick="editLoad(${i})">✏️</button>
+        <button onclick="deleteLoad(${i})">❌</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById("total").innerText=total;
+}
+
+function editLoad(i){
+  let r=data[i];
+  from.value=r.from;
+  count.value=r.count;
+  to.value=r.to;
+  amt.value=r.amt;
+  editIndex=i;
+}
+
+function deleteLoad(i){
+  if(confirm("Delete this load?")){
+    data.splice(i,1);
+    saveHistory();
+    render();
+  }
+}
+
+function saveHistory(){
+  localStorage.setItem(todayKey(),JSON.stringify(data));
+}
+
+function loadHistory(){
+  let d=localStorage.getItem(todayKey());
+  data=d?JSON.parse(d):[];
+  render();
+}
+
+function createBill(){
+  window.print();
+}
+
+function sendWhatsApp(){
+  let msg=`🚛 சக்திவேல் கேரியர்ஸ்%0ACompany: ${company}%0ADate: ${date.value}%0A%0A`;
+  let total=0;
+  data.forEach((r,i)=>{
+    total+=parseInt(r.amt);
+    msg+=`No:${i+1} | ${r.from} → ${r.to} | ${r.count} | ₹${r.amt}%0A`;
+  });
+  msg+=`%0ATotal: ₹${total}`;
+  window.open("https://wa.me/?text="+msg,"_blank");
+}
+
+function goHome(){location.reload();}
+</script>
+
+</body>
+</html>
